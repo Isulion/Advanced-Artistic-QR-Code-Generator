@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Artistic QR Code Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column; /* Stack controls and QR code */
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e9eef2; /* Lighter background */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 900px; /* Wider container */
+            display: flex;
+            gap: 30px; /* Space between controls and QR */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center;
+        }
+        .controls {
+            flex: 1; /* Take available space */
+            min-width: 350px; /* Minimum width for controls */
+            max-width: 450px;
+            text-align: left;
+        }
+        .qr-display {
+            flex: 1; /* Take available space */
+            min-width: 320px; /* Minimum width for QR display */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            width: 100%; /* Span across */
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        fieldset {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        legend {
+            font-weight: bold;
+            color: #0056b3;
+            padding: 0 5px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            margin-top: 10px;
+            font-weight: 500;
+            color: #555;
+            font-size: 0.95em;
+        }
+        input[type="url"],
+        input[type="file"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+        input[type="color"] {
+            padding: 0;
+            height: 35px;
+            vertical-align: middle;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .color-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .color-group label { margin-top: 0; margin-bottom: 0; font-size: 0.9em;}
+        .color-group input[type="color"] { width: 50px;}
+        .color-group select { width: auto; flex-grow: 1;}
+
+        button#generateBtn {
+            width: 100%;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 15px;
+        }
+        button#generateBtn:hover {
+            background-color: #0056b3;
+        }
+        button#generateBtn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #qrcodeCanvas {
+            width: 300px; /* Default canvas container size */
+            height: 300px;
+            border: 1px solid #eee;
+            padding: 5px;
+            background-color: white;
+            margin-top: 15px;
+            position: relative;
+        }
+        #qrcodeCanvas canvas, #qrcodeCanvas img {
+             display: block;
+             max-width: 100%;
+             max-height: 100%;
+             margin: auto;
+        }
+        .image-preview-container { text-align: left; margin-top: 5px; }
+        #imagePreview { max-width: 60px; max-height: 60px; margin-top: 5px; border: 1px solid #ddd; display: none; }
+        .placeholder-text { color: #888; font-style: italic; text-align: center; line-height: 300px; /* Adjust if size changes */ }
+        .error-message { color: red; font-size: 0.9em; margin-top: 10px; min-height: 1.2em; }
+        small { display: block; font-size: 0.8em; color: #666; margin-top: -5px; margin-bottom: 10px;}
+    </style>
+    <!-- Include the qr-code-styling library -->
+    <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Advanced Artistic QR Code Generator</h1>
+
+        <div class="controls">
+            <fieldset>
+                <legend>Content & Basic Setup</legend>
+                <label for="urlInput">URL:</label>
+                <input type="url" id="urlInput" placeholder="https://www.example.com" required value="https://github.com/">
+
+                <label for="qrSize">QR Code Size (px):</label>
+                <input type="number" id="qrSize" value="300" min="50" max="1000" step="10">
+
+                <label for="qrMargin">Margin/Whitespace (px):</label>
+                <input type="number" id="qrMargin" value="10" min="0" max="100">
+            </fieldset>
+
+            <fieldset>
+                <legend>Dots Style</legend>
+                <label for="dotsType">Dot Shape:</label>
+                <select id="dotsType">
+                    <option value="rounded">Rounded</option>
+                    <option value="dots">Dots</option>
+                    <option value="classy">Classy</option>
+                    <option value="classy-rounded">Classy Rounded</option>
+                    <option value="square" selected>Square</option>
+                    <option value="extra-rounded">Extra Rounded</option>
+                </select>
+
+                <label>Dot Color/Gradient:</label>
+                <div class="color-group">
+                     <label for="dotsColor1">C1:</label><input type="color" id="dotsColor1" value="#4267b2">
+                     <label for="dotsColor2">C2:</label><input type="color" id="dotsColor2" value="#4267b2">
+                     <select id="dotsGradientType">
+                         <option value="">Solid Color (Use C1)</option>
+                         <option value="linear">Linear Gradient</option>
+                         <option value="radial">Radial Gradient</option>
+                     </select>
+                 </div>
+                 <small>If gradient selected, uses C1 and C2. If solid, uses C1.</small>
+            </fieldset>
+
+            <fieldset>
+                <legend>Corner Styles</legend>
+                 <label for="cornersSquareType">Corner Square Shape:</label>
+                 <select id="cornersSquareType">
+                     <option value="square">Square</option>
+                     <option value="dot">Dot</option>
+                     <option value="extra-rounded" selected>Extra Rounded</option>
+                 </select>
+                 <label>Corner Square Color/Gradient:</label>
+                 <div class="color-group">
+                    <label for="cornersSquareColor1">C1:</label><input type="color" id="cornersSquareColor1" value="#1f3563">
+                    <label for="cornersSquareColor2">C2:</label><input type="color" id="cornersSquareColor2" value="#1f3563">
+                    <select id="cornersSquareGradientType">
+                        <option value="">Solid Color (Use C1)</option>
+                        <option value="linear">Linear Gradient</option>
+                        <option value="radial">Radial Gradient</option>
+                    </select>
+                 </div>
+
+                 <label for="cornersDotType">Corner Dot (Eye) Shape:</label>
+                 <select id="cornersDotType">
+                     <option value="square">Square</option>
+                     <option value="dot" selected>Dot</option>
+                 </select>
+                  <label>Corner Dot Color/Gradient:</label>
+                 <div class="color-group">
+                    <label for="cornersDotColor1">C1:</label><input type="color" id="cornersDotColor1" value="#1f3563">
+                    <label for="cornersDotColor2">C2:</label><input type="color" id="cornersDotColor2" value="#1f3563">
+                    <select id="cornersDotGradientType">
+                        <option value="">Solid Color (Use C1)</option>
+                        <option value="linear">Linear Gradient</option>
+                        <option value="radial">Radial Gradient</option>
+                    </select>
+                 </div>
+            </fieldset>
+
+             <fieldset>
+                <legend>Background Style</legend>
+                 <label>Background Color/Gradient:</label>
+                 <div class="color-group">
+                    <label for="bgColor1">C1:</label><input type="color" id="bgColor1" value="#ffffff">
+                    <label for="bgColor2">C2:</label><input type="color" id="bgColor2" value="#ffffff">
+                    <select id="bgGradientType">
+                        <option value="" selected>Solid Color (Use C1)</option>
+                        <option value="linear">Linear Gradient</option>
+                        <option value="radial">Radial Gradient</option>
+                    </select>
+                 </div>
+                 <small>Note: Complex backgrounds can affect scannability.</small>
+            </fieldset>
+
+            <fieldset>
+                <legend>Center Logo (Optional)</legend>
+                 <label for="logoInput">Select Logo Image:</label>
+                 <input type="file" id="logoInput" accept="image/png, image/jpeg, image/gif, image/svg+xml">
+                 <div class="image-preview-container">
+                    <img id="imagePreview" src="#" alt="Logo Preview"/>
+                 </div>
+                 <label for="logoSize">Logo Size (relative, e.g., 0.3 = 30%):</label>
+                 <input type="number" id="logoSize" value="0.3" min="0.1" max="0.6" step="0.05">
+                 <label for="logoMargin">Logo Margin (px):</label>
+                 <input type="number" id="logoMargin" value="4" min="0" max="20">
+                 <label for="hideBgDots">Hide Dots Behind Logo:</label>
+                 <select id="hideBgDots"><option value="true" selected>Yes</option><option value="false">No</option></select>
+                 <small>Requires Error Correction 'H' (set automatically).</small>
+            </fieldset>
+
+             <button id="generateBtn">Generate QR Code</button>
+             <div id="errorMessage" class="error-message"></div>
+
+        </div><!-- /controls -->
+
+        <div class="qr-display">
+            <div id="qrcodeCanvas">
+                 <span class="placeholder-text">QR Code will appear here</span>
+            </div>
+             <!-- Maybe add download button here later -->
+        </div><!-- /qr-display -->
+
+    </div><!-- /container -->
+
+    <script>
+        // --- Get Element References ---
+        const urlInput = document.getElementById('urlInput');
+        const qrSizeInput = document.getElementById('qrSize');
+        const qrMarginInput = document.getElementById('qrMargin');
+        const dotsTypeSelect = document.getElementById('dotsType');
+        const dotsColor1Input = document.getElementById('dotsColor1');
+        const dotsColor2Input = document.getElementById('dotsColor2');
+        const dotsGradientTypeSelect = document.getElementById('dotsGradientType');
+        const cornersSquareTypeSelect = document.getElementById('cornersSquareType');
+        const cornersSquareColor1Input = document.getElementById('cornersSquareColor1');
+        const cornersSquareColor2Input = document.getElementById('cornersSquareColor2');
+        const cornersSquareGradientTypeSelect = document.getElementById('cornersSquareGradientType');
+        const cornersDotTypeSelect = document.getElementById('cornersDotType');
+        const cornersDotColor1Input = document.getElementById('cornersDotColor1');
+        const cornersDotColor2Input = document.getElementById('cornersDotColor2');
+        const cornersDotGradientTypeSelect = document.getElementById('cornersDotGradientType');
+        const bgColor1Input = document.getElementById('bgColor1');
+        const bgColor2Input = document.getElementById('bgColor2');
+        const bgGradientTypeSelect = document.getElementById('bgGradientType');
+        const logoInput = document.getElementById('logoInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const logoSizeInput = document.getElementById('logoSize');
+        const logoMarginInput = document.getElementById('logoMargin');
+        const hideBgDotsSelect = document.getElementById('hideBgDots');
+        const generateBtn = document.getElementById('generateBtn');
+        const qrcodeContainer = document.getElementById('qrcodeCanvas');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        let logoImageDataUrl = null; // Store logo data
+
+        // --- Helper Function to Create Color/Gradient Object ---
+        function getColorOptions(color1, color2, gradientType) {
+            if (gradientType) {
+                // Gradient selected
+                return {
+                    gradient: {
+                        type: gradientType, // 'linear' or 'radial'
+                        // rotation: // Could add rotation input later if needed for linear
+                        colorStops: [
+                            { offset: 0, color: color1 },
+                            { offset: 1, color: color2 }
+                        ]
+                    }
+                };
+            } else {
+                // Solid color selected
+                return { color: color1 };
+            }
+        }
+
+        // --- Logo File Handling ---
+        logoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            errorMessageDiv.textContent = '';
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                    errorMessageDiv.textContent = 'Logo file is too large (max 2MB).';
+                    logoInput.value = '';
+                    imagePreview.style.display = 'none';
+                    logoImageDataUrl = null;
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoImageDataUrl = e.target.result;
+                    imagePreview.src = logoImageDataUrl;
+                    imagePreview.style.display = 'block';
+                }
+                reader.onerror = function() {
+                    errorMessageDiv.textContent = 'Error reading image file.';
+                    logoInput.value = '';
+                    imagePreview.style.display = 'none';
+                    logoImageDataUrl = null;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                logoImageDataUrl = null;
+                imagePreview.style.display = 'none';
+            }
+        });
+
+        // --- QR Code Generation ---
+        generateBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            const size = parseInt(qrSizeInput.value, 10);
+            const margin = parseInt(qrMarginInput.value, 10);
+
+            errorMessageDiv.textContent = ''; // Clear previous errors
+
+            // --- Basic Validation ---
+            if (!url) {
+                errorMessageDiv.textContent = 'Please enter a URL.';
+                urlInput.focus();
+                return;
+            }
+            if (isNaN(size) || size < 50 || size > 1000) {
+                 errorMessageDiv.textContent = 'Please enter a valid size (50-1000).';
+                qrSizeInput.focus();
+                return;
+            }
+             if (isNaN(margin) || margin < 0 || margin > 100) {
+                 errorMessageDiv.textContent = 'Please enter a valid margin (0-100).';
+                qrMarginInput.focus();
+                return;
+            }
+
+            // --- Clear previous QR code & update UI ---
+            qrcodeContainer.innerHTML = '';
+            qrcodeContainer.style.width = `${size}px`; // Adjust container size
+            qrcodeContainer.style.height = `${size}px`;
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+
+            // --- Build Styling Options ---
+            const qrCodeOptions = {
+                width: size,
+                height: size,
+                type: 'canvas', // Could make this an option (canvas/svg)
+                data: url,
+                margin: margin,
+                qrOptions: {
+                    errorCorrectionLevel: 'H', // Always use 'H' for artistic flexibility / logo
+                    // mode: // Could add mode if needed
+                    // typeNumber: // Could add typeNumber if needed
+                },
+                 dotsOptions: {
+                     type: dotsTypeSelect.value,
+                     ...getColorOptions(dotsColor1Input.value, dotsColor2Input.value, dotsGradientTypeSelect.value)
+                 },
+                 backgroundOptions: {
+                     ...getColorOptions(bgColor1Input.value, bgColor2Input.value, bgGradientTypeSelect.value)
+                 },
+                 cornersSquareOptions: {
+                     type: cornersSquareTypeSelect.value,
+                      ...getColorOptions(cornersSquareColor1Input.value, cornersSquareColor2Input.value, cornersSquareGradientTypeSelect.value)
+                 },
+                  cornersDotOptions: {
+                     type: cornersDotTypeSelect.value,
+                     ...getColorOptions(cornersDotColor1Input.value, cornersDotColor2Input.value, cornersDotGradientTypeSelect.value)
+                 },
+                // Conditionally add image options
+                ...(logoImageDataUrl && {
+                     image: logoImageDataUrl,
+                     imageOptions: {
+                         crossOrigin: "anonymous",
+                         hideBackgroundDots: hideBgDotsSelect.value === 'true',
+                         imageSize: parseFloat(logoSizeInput.value) || 0.3,
+                         margin: parseInt(logoMarginInput.value) || 4
+                     }
+                })
+            };
+
+
+            // --- Generate and Append ---
+            try {
+                const qrCode = new QRCodeStyling(qrCodeOptions);
+                qrCode.append(qrcodeContainer);
+
+            } catch (error) {
+                console.error("QR Code generation failed:", error);
+                errorMessageDiv.textContent = `Error: ${error.message || 'Could not generate QR Code.'}`;
+                qrcodeContainer.innerHTML = '<span class="placeholder-text">Generation Failed</span>'; // Show failure in box
+            } finally {
+                 // --- Re-enable button ---
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate QR Code';
+            }
+        });
+
+         // --- Optional: Generate on initial load ---
+         // generateBtn.click(); // Uncomment to generate QR on page load with default values
+
+    </script>
+
+</body>
+</html>
